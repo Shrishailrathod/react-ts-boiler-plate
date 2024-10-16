@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { getTodos } from "./api/todos/todos.api";
+import { getTodos } from "./services/todos/todos.api";
 import "./App.css";
 import reactLogo from "./assets/react.svg";
 import { useDataStoreContext } from "./context/DataStore.context";
