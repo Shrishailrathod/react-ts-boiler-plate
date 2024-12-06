@@ -1,58 +1,79 @@
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { getTodos } from "./services/todos/todos.api";
-import "./App.css";
-import reactLogo from "./assets/react.svg";
-import { useDataStoreContext } from "./context/DataStore.context";
-import "./styles/globals/_styles.scss";
-import viteLogo from "/vite.svg";
-function App() {
-  const [count, setCount] = useState(0);
-  const { isVisible, setIsVisible } = useDataStoreContext();
+import  { useState, useEffect } from "react";
+import TodoForm from "./components/TodoForm"; 
+import TaskTable from "./components/TaskTable"; 
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryFn: async () => await getTodos(),
-    queryKey: ["todo"], //key for cache
-  });
-  if (isLoading) {
-    return <span>is loading...</span>;
-  }
 
-  if (isError) console.log("Error While fetching Data", error);
+const App = () => {
+  // Load tasks from localStorage or default to an empty array
+  const loadTasksFromLocalStorage = (): { title: string; description: string }[] => {
+    const tasks = localStorage.getItem("tasks");
+    return tasks ? JSON.parse(tasks) : [];
+  };
+
+  const [tasks, setTasks] = useState<{ title: string; description: string }[]>(loadTasksFromLocalStorage());
+  const [editingTaskIndex, setEditingTaskIndex] = useState<number | null>(null);
+
+  // Save tasks to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+  }, [tasks]);
+
+  // Handle adding a new task or updating an existing task
+  const handleAddOrUpdateTask = (task: { title: string; description: string }) => {
+    if (editingTaskIndex !== null) {
+      
+      // Update task logic
+      const updatedTasks = [...tasks];
+      updatedTasks[editingTaskIndex] = task;
+      setTasks(updatedTasks);
+      setEditingTaskIndex(null); // Reset editing state after update
+    } else {
+      // Add new task
+      setTasks([...tasks, task]);
+    }
+  };
+
+  // Handle deleting a task
+  const handleDeleteTask = (index: number) => {
+    const updatedTasks = tasks.filter((_, i) => i !== index);
+    setTasks(updatedTasks);
+  };
+
+  // Handle editing a task
+  const handleEditTask = (index: number) => {
+    setEditingTaskIndex(index);
+  };
+
   return (
     <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React {data?.length}</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      {isVisible && (
-        <p className="read-the-docs">
-          Click on the Vite and React logos to learn more
-        </p>
-      )}
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        flexDirection: "column",
+        height: "100vh",
+        width: "100vw",
+        backgroundColor: "#f5f5f5",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* Pass handleAddOrUpdateTask and reset the form */}
+      <TodoForm
+        onAddOrUpdateTask={handleAddOrUpdateTask}
+        editingTask={tasks[editingTaskIndex ?? -1]} // Send editing task if any
+        isEditing={editingTaskIndex !== null} // Track if we are editing a task
+      />
 
-      <button
-        onClick={() => {
-          setIsVisible((prevState) => !prevState);
-        }}
-      >
-        {!isVisible ? "Show" : "Hide"} Docs
-      </button>
+      {/* Task Table */}
+      <TaskTable
+        tasks={tasks}
+        onDelete={handleDeleteTask}
+        onEdit={handleEditTask}
+      />
+    </div>
     </>
   );
-}
+};
 
 export default App;
